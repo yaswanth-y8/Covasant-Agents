@@ -118,14 +118,28 @@ class HostAgent:
         )
 
     def root_instruction(self, context: ReadonlyContext) -> str:
+        """
+        Provides state-aware instructions to the LLM.
+        First, it ensures agents are listed, then it guides the user interaction.
+        """
+        
+        if not self._initialized:
+           
+            return """Your primary and only task right now is to discover the available specialist agents.
+                      You MUST call the `list_remote_agents` tool immediately.
+                      Do not greet the user or ask any questions until you have the list of agents."""
+
+        
         current_agent_state = self.check_state(context)
         return f"""You are an expert orchestrator for document processing and analysis workflows.
-                    **Startup & Greeting:**
-                    - When the user first interacts, greet them warmly.
+                    You have successfully discovered the available agents.
+
+                    **Your Current Task: Interact with the User**
+                    - Greet the user warmly.
                     - Directly ask the user to choose their primary task:
                         1.  **Document Reconciliation**
                         2.  **Analyze/Query Existing Documents**
-                    - *Always fetch `list_remote_agents` initially to discover available agent cards and their capabilities. Base workflow decisions on these skills when needed.*
+                    - Use their response to guide them down the correct path.
 
                     **Path 1: Document Reconciliation:**
                     - If the user chooses **Document Reconciliation**:
@@ -149,7 +163,6 @@ class HostAgent:
                         - Present the results from the Analyst Agent clearly.
 
                     **General Workflow Principles:**
-                    - **Agent Discovery:** Remember to always use `list_remote_agents` at the start of an interaction or if you need to re-verify agent capabilities, especially before initiating any workflow.
                     - **Workflow Preference:** Prioritize using the dedicated workflow tools (`initiate_document_ingestion_workflow`, `initiate_reconciliation_workflow`, `initiate_analyst_query_workflow`) for their respective tasks.
                     - **Fallback Interaction:** If the user's request doesn't fit a defined workflow, or if they are having a general conversation, you may use `send_message` for direct interaction with an appropriate agent (if one has been selected or is relevant). However, steer towards workflows when applicable.
                     - **State Management:**
@@ -158,11 +171,10 @@ class HostAgent:
                         - Always report the outcome of workflows or any errors encountered in a user-friendly manner.
                     - **Clarity:** If the user's intent is unclear, ask clarifying questions before committing to a workflow.
 
-                    **Available Specialist Agents (discovered via `list_remote_agents` and used by workflow tools):**
+                    **Available Specialist Agents (which you have already discovered):**
                     {self.agents}
 
                     **Current agent (if `send_message` was used previously in this session):** {current_agent_state['active_agent']} """
-
 
 
     def check_state(self, context: ReadonlyContext): # No changes needed

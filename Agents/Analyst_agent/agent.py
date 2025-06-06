@@ -9,7 +9,7 @@ from google.adk.memory.in_memory_memory_service import InMemoryMemoryService
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types as google_types
-
+from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset,SseServerParams
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -171,11 +171,7 @@ class AnalystAgent:
                 "- If you are unsure which tool to use or if the request is too complex for your tools, state that you cannot fulfill the request as is and suggest how the user might rephrase or simplify it."
             ),
             tools=[
-                _get_doc_count_date_range_tool,
-                _get_doc_count_vendor_tool,
-                _get_total_amount_vendor_tool,
-                _list_documents_vendor_tool,
-                _list_documents_date_range_tool
+                MCPToolset(connection_params=SseServerParams(url="http://127.0.0.1:8000/sse"))
             ]
         )
 
@@ -308,3 +304,4 @@ class AnalystAgent:
                     'updates': self.get_processing_message(),
                 }
 
+root_agent=AnalystAgent()._build_agent()
