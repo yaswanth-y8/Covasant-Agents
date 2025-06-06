@@ -8,10 +8,7 @@ from sqlalchemy import create_engine, Column, String, Float, Index, Text, TIMEST
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.exc import SQLAlchemyError
 
-DB_FILE_NAME = "reconciliation_database.db"
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(SCRIPT_DIR, DB_FILE_NAME)
-DATABASE_URL = f"sqlite:///{DB_PATH}"
+DATABASE_URL = f"sqlite:///C:/Users/Sai Charan/Desktop/ADK/vendor_reconcilliation/reconciliation_database.db"
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
