@@ -8,7 +8,7 @@ from sqlalchemy import create_engine, Column, String, Float, Index, Text, TIMEST
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.exc import SQLAlchemyError
 
-DB_FILE_NAME = "reconciliation_data.db"
+DB_FILE_NAME = "reconciliation_database.db"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(SCRIPT_DIR, DB_FILE_NAME)
 DATABASE_URL = f"sqlite:///{DB_PATH}"
@@ -66,6 +66,7 @@ def parse_and_format_date_old(date_str: Optional[str]) -> Optional[str]:
     cleaned_date_str = date_str.lower()
     cleaned_date_str = re.sub(r"(\d+)(st|nd|rd|th)", r"\1", cleaned_date_str)
     cleaned_date_str = cleaned_date_str.replace(',', '')
+    cleaned_date_str = cleaned_date_str.replace('-', ' ')
     date_formats_to_try = [
     "%d %B %Y", "%d %b %Y", "%B %d %Y", "%b %d %Y", "%Y-%m-%d",
     "%m/%d/%Y", "%d/%m/%Y", "%Y/%m/%d", "%b %d %Y", "%B %d %Y",
@@ -401,6 +402,3 @@ def get_documents_by_date_range(doc_type: str, start_date_str: str, end_date_str
     finally:
         db.close()
     return results
-if __name__=="__main__":
-    p=parse_and_format_date_old('20-may-2025')
-    print(p)
