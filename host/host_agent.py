@@ -2,14 +2,14 @@ import base64
 import json
 import uuid
 
-from typing import List, Dict # Added Dict for type hints
+from typing import List, Dict 
 
 import httpx
 
 from a2a.client import A2ACardResolver 
 from a2a.types import (
     AgentCard,
-    DataPart, # Make sure DataPart is correctly imported or defined
+    DataPart, 
     Message,
     MessageSendConfiguration,
     MessageSendParams,
@@ -24,7 +24,6 @@ from google.adk.agents.readonly_context import ReadonlyContext
 from google.adk.tools.tool_context import ToolContext
 from google.genai import types 
 from .remote_agent_connection import RemoteAgentConnections
-
 
 class HostAgent:
     def __init__(
@@ -87,34 +86,34 @@ class HostAgent:
         """Registers a new agent card dynamically. Ensures initialization first."""
         await self._ensure_initialized() # Ensure base initialization is done
 
-        # Add or update the new card
         remote_connection = RemoteAgentConnections(self.httpx_client, card)
         self.remote_agent_connections[card.name] = remote_connection
         self.cards[card.name] = card
         
         agent_info_list = []
-        for ra_card_loop in self.cards.values(): # Iterate over all current cards
+        for ra_card_loop in self.cards.values(): 
             agent_info_list.append(json.dumps({'name': ra_card_loop.name, 'description': ra_card_loop.description}))
         
         if agent_info_list:
             print("agent info list",agent_info_list)
             self.agents = '\n'.join(agent_info_list)
         else:
-            self.agents = "No remote agents are currently available." # Should be rare if adding a card
+            self.agents = "No remote agents are currently available." 
 
     def create_agent(self) -> Agent:
         return Agent(
             model='gemini-2.0-flash-001',
             name='host_agent',
-            instruction=self.root_instruction, # Pass the method to be called for instruction
+            instruction=self.root_instruction, 
             description=(
                 'This agent orchestrates the decomposition of the user request into'
                 ' tasks that can be performed by the child agents.'
             ),
             tools=[
-                self.list_remote_agents, # This method is now async
-                self.send_message,       # This method was already async
+                self.list_remote_agents, 
+                self.send_message,       
             ],
+            # sub_agents=[DataIngestionAgent()._build_agent(),ReconciliationAgent()._build_agent(),AnalystAgent()._build_agent()]
         )
 
     def root_instruction(self, context: ReadonlyContext) -> str:
@@ -147,7 +146,7 @@ class HostAgent:
                         -   **Sub-Path 1.A: Using Existing Files for Reconciliation:**
                             -   Ask the user for the **Purchase Order (PO) number** for the reconciliation.
                             -   Then, initiate the reconciliation workflow using `initiate_reconciliation_workflow` with the provided PO number.
-                        -   **Sub-Path 1.B: Uploading New Files for Reconciliation:**
+                        -   **Sub-Path 1.B: Uploading New  for Reconciliation:**
                             -   Ask the user to provide the **file path** and **document type** (either 'invoice' or 'purchase_order') for each document they want to upload for reconciliation.
                             -   For each file, use the `initiate_document_ingestion_workflow`.
                             -   During or after ingestion, try to remember/confirm the **PO number** (if a PO was ingested or an invoice references one) and the **invoice number** (if an invoice was ingested).
@@ -227,18 +226,16 @@ class HostAgent:
         state['agent'] = agent_name
         
         client_connection = self.remote_agent_connections[agent_name]
-        # This check might be redundant if the key's presence guarantees a valid object,
-        # but kept for safety.
         if not client_connection: 
             raise ValueError(f'Client connection not available for {agent_name}')
 
         task_id_val = state.get('task_id', None)
         context_id_val = state.get('context_id', None)
         message_id_val = state.get('message_id', str(uuid.uuid4()))
-        state['message_id'] = message_id_val # Store it back in case it was generated
+        state['message_id'] = message_id_val 
 
         request_params = MessageSendParams(
-            id=str(uuid.uuid4()), # ID for this specific send operation
+            id=str(uuid.uuid4()), 
             message=Message(
                 role='user',
                 parts=[TextPart(text=message)],

@@ -45,7 +45,7 @@ def _get_doc_count_vendor_tool(document_type: str, vendor_name: str) -> Dict[str
         return {"status": "error", "message": f"Error querying database for vendor count: {str(e)}"}
 
 @mcp.tool()
-def _get_total_amount_vendor_tool(document_type: str, vendor_name: str) -> Dict[str, Any]:
+def _get_total_amount_vendor_tool(vendor_name: str,document_type: str="purchase_order") -> Dict[str, Any]:
     """
     TOOL: Gets the total amount of documents (invoices or purchase_orders) for a specific vendor name.
     document_type must be 'invoice' or 'purchase_order'.
@@ -134,11 +134,11 @@ def _ingest_and_store_document_tool(raw_document_file_path: str, document_type: 
             return {"status": "error", "error_message": "Extraction successful, but no 'data' field found in result."}
 
         doc_number_raw = doc_data.get("document_number")
-        if not doc_number_raw: # Handles None, empty string, etc. after .get()
+        if not doc_number_raw:
             return {"status": "error", "error_message": "Document number missing from extracted data, cannot store."}
 
         doc_number = str(doc_number_raw).strip().upper()
-        if not doc_number: # Handles case where doc_number_raw was whitespace
+        if not doc_number: 
             return {"status": "error", "error_message": "Document number is empty after processing."}
 
         stored_successfully = False
@@ -161,6 +161,68 @@ def _ingest_and_store_document_tool(raw_document_file_path: str, document_type: 
                 "document_number": doc_number, 
                 "full_extraction_result": extraction_result
             }
+
+
+
+@mcp.tool()
+def _get_top_vendors_by_doc_count_tool(document_type: str, limit: int = 5) -> Dict[str, Any]:
+    """
+    TOOL: Gets a list of top vendors based on the number of documents (invoices or purchase_orders).
+    document_type must be 'invoice' or 'purchase_order'.
+    limit specifies how many top vendors to return, defaults to 5.
+    """
+    normalized_doc_type = str(document_type).strip().lower().replace(" ", "_")
+    if normalized_doc_type not in ["invoice", "purchase_order"]:
+        return {"status": "error", "message": "Invalid document_type. Must be 'invoice' or 'purchase_order'."}
+    try:
+        safe_limit = max(1, int(limit)) if isinstance(limit, (int, float, str)) and str(limit).isdigit() else 5
+        top_vendors = get_top_vendors_by_document_count(normalized_doc_type, safe_limit)
+        return {"status": "success", "document_type": normalized_doc_type, "top_vendors_by_count": top_vendors}
+    except Exception as e:
+        print(f"ERROR in _get_top_vendors_by_doc_count_tool: {e}\n{traceback.format_exc()}")
+        return {"status": "error", "message": f"Error fetching top vendors by document count: {str(e)}"}
+
+@mcp.tool()
+def _get_top_vendors_by_total_amount_tool(document_type: str, limit: int = 5) -> Dict[str, Any]:
+    """
+    TOOL: Gets a list of top vendors based on the total amount from their documents (invoices or purchase_orders).
+    document_type must be 'invoice' or 'purchase_order'.
+    limit specifies how many top vendors to return, defaults to 5.
+    """
+    normalized_doc_type = str(document_type).strip().lower().replace(" ", "_")
+    if normalized_doc_type not in ["invoice", "purchase_order"]:
+        return {"status": "error", "message": "Invalid document_type. Must be 'invoice' or 'purchase_order'."}
+    try:
+        safe_limit = max(1, int(limit)) if isinstance(limit, (int, float, str)) and str(limit).isdigit() else 5
+        top_vendors = get_top_vendors_by_total_amount(normalized_doc_type, safe_limit)
+        # Format total_amount in the response for consistency
+        formatted_top_vendors = [
+            {"vendor_name": v["vendor_name"], "total_amount": f"{v['total_amount']:.2f}"} 
+            for v in top_vendors
+        ]
+        return {"status": "success", "document_type": normalized_doc_type, "top_vendors_by_amount": formatted_top_vendors}
+    except Exception as e:
+        print(f"ERROR in _get_top_vendors_by_total_amount_tool: {e}\n{traceback.format_exc()}")
+        return {"status": "error", "message": f"Error fetching top vendors by total amount: {str(e)}"}
+
+@mcp.tool()
+def _list_all_distinct_vendors_tool(document_type: str="invoice") -> Dict[str, Any]:
+    """
+    TOOL: Lists all unique vendor names found for a given document type (invoices or purchase_orders).
+    document_type must be 'invoice' or 'purchase_order'.
+    """
+    normalized_doc_type = str(document_type).strip().lower().replace(" ", "_")
+    if normalized_doc_type not in ["invoice", "purchase_order"]:
+        return {"status": "error", "message": "Invalid document_type. Must be 'invoice' or 'purchase_order'."}
+    try:
+        vendor_names = get_distinct_vendors(normalized_doc_type)
+        return {"status": "success", "document_type": normalized_doc_type, "distinct_vendor_count": len(vendor_names), "vendor_names": vendor_names}
+    except Exception as e:
+        print(f"ERROR in _list_all_distinct_vendors_tool: {e}\n{traceback.format_exc()}")
+        return {"status": "error", "message": f"Error fetching distinct vendor names: {str(e)}"}
+
+
+
 
 
 @staticmethod
